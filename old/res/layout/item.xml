@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent" android:layout_height="wrap_content"
+	android:orientation="vertical" android:id="@+id/programItem">
+
+	<TextView android:id="@+id/name" android:layout_width="fill_parent"
+		android:layout_height="wrap_content" android:textSize="22sp"
+		android:layout_gravity="center" android:fadingEdge="vertical" />
+		
+	<TextView android:id="@+id/address" android:layout_width="fill_parent"
+		android:layout_height="wrap_content" android:textSize="16sp"
+		android:layout_gravity="center" android:gravity="right"
+		android:fadingEdge="vertical" android:paddingRight="4sp"/>
+</LinearLayout>
