@@ -1,15 +1,28 @@
 package ob.droid;
 
 import android.app.Activity;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 
-public class OBDroidActivity extends Activity
+/**
+ * 
+ */
+public class OBDroid extends Activity
 {
-    /** Called when the activity is first created. */
+
+
+    public OBDroid(){
+        super();
+    }
+
+
     @Override
     public void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
+
+        SharedPreferences shp = PreferenceManager.getDefaultSharedPreferences(this);
     }
 }
