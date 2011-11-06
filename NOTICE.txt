@@ -1,0 +1,11 @@
+atari_small  Copyright (c) 1999, Thomas A. Fine
+atari_small
+atari_small  License to copy, modify, and distribute for both commercial and
+atari_small  non-commercial use is herby granted, provided this notice
+atari_small  is preserved.
+atari_small
+atari_small  Email to my last name at head.cfa.harvard.edu
+atari_small  http://hea-www.harvard.edu/~fine/
+atari_small
+atari_small  Produced with bdfedit, a tcl/tk font editing program
+atari_small  written by Thomas A. Fine
