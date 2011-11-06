@@ -28,6 +28,8 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.graphics.Typeface;
 
+import ob.droid.R;
+
 class Bitmap4x8FontRenderer extends BaseTextRenderer {
     private final static int kCharacterWidth = 4;
     private final static int kCharacterHeight = 8;

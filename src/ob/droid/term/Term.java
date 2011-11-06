@@ -154,7 +154,7 @@ public abstract class Term
         mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
         readPrefs();
 
-        setContentView(R.layout.term_activity);
+        setContentView(R.layout.main);
 
         mEmulatorView = (EmulatorView) findViewById(EMULATOR_VIEW);
 
@@ -486,12 +486,9 @@ public abstract class Term
         int id = item.getItemId();
         if (id == R.id.menu_preferences) {
             doPreferences();
-        } else if (id == R.id.menu_reset) {
+        }
+        else if (id == R.id.menu_reset) {
             doResetTerminal();
-        } else if (id == R.id.menu_send_email) {
-            doEmailTranscript();
-        } else if (id == R.id.menu_special_keys) {
-            doDocumentKeys();
         }
         return super.onOptionsItemSelected(item);
     }
