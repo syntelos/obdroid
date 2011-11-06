@@ -17,54 +17,47 @@
 
 package ob.droid.term;
 
-import java.io.FileDescriptor;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-
 import android.app.Activity;
 import android.app.AlertDialog;
+
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.ColorMatrixColorFilter;
-import android.graphics.Paint;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffXfermode;
-import android.graphics.Rect;
-import android.graphics.Typeface;
+
 import android.net.Uri;
+
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+
 import android.preference.PreferenceManager;
+
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.GestureDetector;
+
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
-import android.view.View;
-import android.view.inputmethod.BaseInputConnection;
-import android.view.inputmethod.CompletionInfo;
-import android.view.inputmethod.EditorInfo;
-import android.view.inputmethod.ExtractedText;
-import android.view.inputmethod.ExtractedTextRequest;
-import android.view.inputmethod.InputConnection;
+
+import java.io.FileDescriptor;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+import java.util.ArrayList;
+
+import ob.droid.R;
 
 /**
  * A terminal emulator activity.
  */
-public class Term extends Activity {
+public abstract class Term 
+    extends Activity
+{
     /**
      * Set to true to add debugging code and logging.
      */
@@ -181,7 +174,9 @@ public class Term extends Activity {
     public void onDestroy() {
         super.onDestroy();
         if (mTermFd != null) {
-            Exec.close(mTermFd);
+            /****************************************************
+             *            Exec.close(mTermFd);                  *
+             ****************************************************/
             mTermFd = null;
         }
     }
@@ -202,7 +197,9 @@ public class Term extends Activity {
 
             public void run() {
                 Log.i(Term.LOG_TAG, "waiting for: " + procId);
-               int result = Exec.waitFor(procId);
+                int result = 0; /**********************************
+                                 * Exec.waitFor(procId);          *
+                                 **********************************/
                 Log.i(Term.LOG_TAG, "Subprocess exited: " + result);
                 handler.sendEmptyMessage(result);
              }
@@ -259,7 +256,9 @@ public class Term extends Activity {
         if (args.size() >= 3) {
             arg2 = args.get(2);
         }
-        mTermFd = Exec.createSubprocess(arg0, arg1, arg2, processId);
+        /****************************************************************************
+         *        mTermFd = Exec.createSubprocess(arg0, arg1, arg2, processId);     *
+         ****************************************************************************/
     }
 
     private ArrayList<String> parse(String cmd) {
@@ -497,20 +496,13 @@ public class Term extends Activity {
         return super.onOptionsItemSelected(item);
     }
 
-    private void doPreferences() {
-        startActivity(new Intent(this, TermPreferences.class));
-    }
+    protected abstract void doPreferences();
 
-    private void setColors() {
-        int[] scheme = COLOR_SCHEMES[mColorId];
-        mEmulatorView.setColors(scheme[0], scheme[1]);
-    }
-
-    private void doResetTerminal() {
+    protected void doResetTerminal() {
         restart();
     }
 
-    private void doEmailTranscript() {
+    protected void doEmailTranscript() {
         // Don't really want to supply an address, but
         // currently it's required, otherwise we get an
         // exception.
@@ -523,7 +515,7 @@ public class Term extends Activity {
         startActivity(intent);
     }
 
-    private void doDocumentKeys() {
+    protected void doDocumentKeys() {
         String controlKey = CONTROL_KEY_NAME[mControlKeyId];
         new AlertDialog.Builder(this).
             setTitle("Press " + controlKey + " and Key").
@@ -536,4 +528,9 @@ public class Term extends Activity {
                     + controlKey + " 6 ==> Control-^").
             show();
      }
+
+    private void setColors() {
+        int[] scheme = COLOR_SCHEMES[mColorId];
+        mEmulatorView.setColors(scheme[0], scheme[1]);
+    }
 }

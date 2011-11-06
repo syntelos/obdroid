@@ -16,6 +16,8 @@
  */
 package ob.droid.term;
 
+import android.view.KeyEvent;
+
 /**
  * An ASCII key listener. Supports control characters and escape. Keeps track of
  * the current state of the alt, shift, and control keys.

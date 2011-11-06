@@ -17,11 +17,9 @@
 
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:id="@+id/menu_preferences"
-    	android:title="@string/preferences" />
+    	android:title="@string/preferences"
+        />
     <item android:id="@+id/menu_reset"
-    	android:title="@string/reset" />
-    <item android:id="@+id/menu_send_email"
-    	android:title="@string/send_email" />
-    <item android:id="@+id/menu_special_keys"
-    	android:title="@string/special_keys" />
+    	android:title="@string/reset"
+        />
 </menu>

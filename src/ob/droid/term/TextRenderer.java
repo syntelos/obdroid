@@ -16,6 +16,8 @@
  */
 package ob.droid.term;
 
+import android.graphics.Canvas;
+
 /**
  * Text renderer interface
  */

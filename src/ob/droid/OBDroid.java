@@ -16,6 +16,10 @@
 package ob.droid;
 
 import android.app.Activity;
+import android.content.Intent;
+import android.content.res.Configuration;
+import android.content.res.Resources;
+import android.content.res.TypedArray;
 import android.os.Bundle;
 
 /**
@@ -37,4 +41,9 @@ public class OBDroid
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
     }
+    @Override
+    protected void doPreferences(){
+        startActivity(new Intent(this, OBDroidPreferences.class));
+    }
+
 }

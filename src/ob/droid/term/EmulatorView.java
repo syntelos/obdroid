@@ -16,6 +16,48 @@
  */
 package ob.droid.term;
 
+import android.content.Context;
+import android.content.res.Configuration;
+import android.content.res.Resources;
+import android.content.res.TypedArray;
+
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.ColorMatrixColorFilter;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
+import android.graphics.Typeface;
+
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+
+import android.util.AttributeSet;
+import android.util.Log;
+
+import android.view.View;
+import android.view.GestureDetector;
+import android.view.KeyEvent;
+
+import android.view.MotionEvent;
+
+import android.view.inputmethod.BaseInputConnection;
+import android.view.inputmethod.CompletionInfo;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.ExtractedText;
+import android.view.inputmethod.ExtractedTextRequest;
+import android.view.inputmethod.InputConnection;
+
+import java.io.FileDescriptor;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+import ob.droid.R;
+
 /**
  * A view on a transcript and a terminal emulator. Displays the text of the
  * transcript and the current cursor position of the terminal emulator.
@@ -535,10 +577,10 @@ class EmulatorView extends View implements GestureDetector.OnGestureListener {
     private void updateSize(int w, int h) {
         mColumns = w / mCharacterWidth;
         mRows = h / mCharacterHeight;
-
-        // Inform the attached pty of our new size:
-        Exec.setPtyWindowSize(mTermFd, mRows, mColumns, w, h);
-
+        /**************************************************************************
+         *        // Inform the attached pty of our new size:                     *
+         *        Exec.setPtyWindowSize(mTermFd, mRows, mColumns, w, h);          *
+         **************************************************************************/
 
         if (mTranscriptScreen != null) {
             mEmulator.updateSize(mColumns, mRows);

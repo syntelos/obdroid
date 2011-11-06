@@ -16,6 +16,12 @@
  */
 package ob.droid.term;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+import android.util.Log;
+
 /**
  * Renders text into a screen. Contains all the terminal-specific knowlege and
  * state. Emulates a subset of the X Window System xterm terminal, which in turn

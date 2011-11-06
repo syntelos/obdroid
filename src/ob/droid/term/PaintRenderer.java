@@ -16,6 +16,16 @@
  */
 package ob.droid.term;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.ColorMatrixColorFilter;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
+import android.graphics.Typeface;
+
 class PaintRenderer extends BaseTextRenderer {
     public PaintRenderer(int fontSize, int forePaintColor, int backPaintColor) {
         super(forePaintColor, backPaintColor);
