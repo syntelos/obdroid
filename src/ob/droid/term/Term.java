@@ -43,13 +43,9 @@ import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import java.io.FileDescriptor;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-
 import java.util.ArrayList;
 
+import ob.droid.Connection;
 import ob.droid.R;
 
 /**
@@ -74,49 +70,16 @@ public abstract class Term
      * Set to true to log unknown escape sequences.
      */
     public static final boolean LOG_UNKNOWN_ESCAPE_SEQUENCES = DEBUG && false;
-
-    /**
-     * The tag we use when logging, so that our messages can be distinguished
-     * from other messages in the log. Public because it's used by several
-     * classes.
-     */
-    public static final String LOG_TAG = "Term";
-
-    /**
-     * Our main view. Displays the emulated terminal screen.
-     */
-    private EmulatorView mEmulatorView;
-
-    /**
-     * The pseudo-teletype (pty) file descriptor that we use to communicate with
-     * another process, typically a shell.
-     */
-    private FileDescriptor mTermFd;
-
-    /**
-     * Used to send data to the remote process.
-     */
-    private FileOutputStream mTermOut;
-
-    /**
-     * A key listener that tracks the modifier keys and allows the full ASCII
-     * character set to be entered.
-     */
-    private TermKeyListener mKeyListener;
-
     /**
      * The name of our emulator view in the view resource.
      */
     private static final int EMULATOR_VIEW = R.id.emulatorView;
 
-    private int mFontSize = 9;
-    private int mColorId = 2;
-    private int mControlKeyId = 0;
-
     private static final String FONTSIZE_KEY = "fontsize";
     private static final String COLOR_KEY = "color";
+
     private static final String CONTROLKEY_KEY = "controlkey";
-    private static final String SHELL_KEY = "shell";
+
     private static final String INITIALCOMMAND_KEY = "initialcommand";
 
     public static final int WHITE = 0xffffffff;
@@ -136,38 +99,64 @@ public abstract class Term
         "Ball", "@", "Left-Alt", "Right-Alt"
     };
 
-    private int mControlKeyCode;
+    /**
+     * The tag we use when logging, so that our messages can be distinguished
+     * from other messages in the log. Public because it's used by several
+     * classes.
+     */
+    public static final String LOG_TAG = "Term";
 
-    private final static String DEFAULT_SHELL = "/system/bin/sh -";
-    private String mShell;
+    private final static String DEFAULT_INITIAL_COMMAND = null;
 
-    private final static String DEFAULT_INITIAL_COMMAND =
-        "export PATH=/data/local/bin:$PATH";
-    private String mInitialCommand;
+    /**
+     * Our main view. Displays the emulated terminal screen.
+     */
+    private EmulatorView emulatorView;
 
-    private SharedPreferences mPrefs;
+    /**
+     * A key listener that tracks the modifier keys and allows the full ASCII
+     * character set to be entered.
+     */
+    private TermKeyListener keyListener;
+
+    private int fontSize = 9;
+    private int colorId = 2;
+    private int controlKeyId = 0;
+
+    private int controlKeyCode;
+
+    private String initialCommand;
+
+    private SharedPreferences prefs;
+
+
+    protected abstract Connection createConnection();
 
     @Override
     public void onCreate(Bundle icicle) {
         super.onCreate(icicle);
         Log.e(Term.LOG_TAG, "onCreate");
-        mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-        readPrefs();
+        this.prefs = PreferenceManager.getDefaultSharedPreferences(this);
+        this.readPrefs();
 
-        setContentView(R.layout.main);
+        this.setContentView(R.layout.main);
 
-        mEmulatorView = (EmulatorView) findViewById(EMULATOR_VIEW);
+        this.emulatorView = (EmulatorView) findViewById(EMULATOR_VIEW);
 
-        startListening();
+        this.connection = this.createConnection();
 
-        mKeyListener = new TermKeyListener();
+        this.emulatorView.init(this.connection);
 
-        mEmulatorView.setFocusable(true);
-        mEmulatorView.setFocusableInTouchMode(true);
-        mEmulatorView.requestFocus();
-        mEmulatorView.register(mKeyListener);
+        this.sendInitialCommand();
 
-        updatePrefs();
+        this.keyListener = new TermKeyListener();
+
+        this.emulatorView.setFocusable(true);
+        this.emulatorView.setFocusableInTouchMode(true);
+        this.emulatorView.requestFocus();
+        this.emulatorView.register(this.keyListener);
+
+        this.updatePrefs();
     }
 
     @Override
@@ -181,84 +170,24 @@ public abstract class Term
         }
     }
 
-    private void startListening() {
-        int[] processId = new int[1];
-
-        createSubprocess(processId);
-        final int procId = processId[0];
-
-        final Handler handler = new Handler() {
-            @Override
-            public void handleMessage(Message msg) {
-            }
-        };
-
-        Runnable watchForDeath = new Runnable() {
-
-            public void run() {
-                Log.i(Term.LOG_TAG, "waiting for: " + procId);
-                int result = 0; /**********************************
-                                 * Exec.waitFor(procId);          *
-                                 **********************************/
-                Log.i(Term.LOG_TAG, "Subprocess exited: " + result);
-                handler.sendEmptyMessage(result);
-             }
-
-        };
-        Thread watcher = new Thread(watchForDeath);
-        watcher.start();
-
-        mTermOut = new FileOutputStream(mTermFd);
-
-        mEmulatorView.initialize(mTermFd, mTermOut);
-
-        sendInitialCommand();
-    }
 
     private void sendInitialCommand() {
         String initialCommand = mInitialCommand;
-        if (initialCommand == null || initialCommand.equals("")) {
+        if (initialCommand == null || 0 == initialCommand.length()) {
             initialCommand = DEFAULT_INITIAL_COMMAND;
         }
-        if (initialCommand.length() > 0) {
-            write(initialCommand + '\r');
+        if (null != initialCommand && 0 < initialCommand.length()) {
+            this.send(initialCommand + '\n');
         }
     }
 
     private void restart() {
-        startActivity(getIntent());
-        finish();
+        this.startActivity(getIntent());
+        this.finish();
     }
 
-    private void write(String data) {
-        try {
-            mTermOut.write(data.getBytes());
-            mTermOut.flush();
-        } catch (IOException e) {
-            // Ignore exception
-            // We don't really care if the receiver isn't listening.
-            // We just make a best effort to answer the query.
-        }
-    }
+    private void send(String data) {
 
-    private void createSubprocess(int[] processId) {
-        String shell = mShell;
-        if (shell == null || shell.equals("")) {
-            shell = DEFAULT_SHELL;
-        }
-        ArrayList<String> args = parse(shell);
-        String arg0 = args.get(0);
-        String arg1 = null;
-        String arg2 = null;
-        if (args.size() >= 2) {
-            arg1 = args.get(1);
-        }
-        if (args.size() >= 3) {
-            arg2 = args.get(2);
-        }
-        /****************************************************************************
-         *        mTermFd = Exec.createSubprocess(arg0, arg1, arg2, processId);     *
-         ****************************************************************************/
     }
 
     private ArrayList<String> parse(String cmd) {
@@ -314,16 +243,6 @@ public abstract class Term
         mColorId = readIntPref(COLOR_KEY, mColorId, COLOR_SCHEMES.length - 1);
         mControlKeyId = readIntPref(CONTROLKEY_KEY, mControlKeyId,
                 CONTROL_KEY_SCHEMES.length - 1);
-        {
-            String newShell = readStringPref(SHELL_KEY, mShell);
-            if ((newShell == null) || ! newShell.equals(mShell)) {
-                if (mShell != null) {
-                    Log.i(Term.LOG_TAG, "New shell set. Restarting.");
-                    restart();
-                }
-                mShell = newShell;
-            }
-        }
         {
             String newInitialCommand = readStringPref(INITIALCOMMAND_KEY,
                     mInitialCommand);
@@ -498,33 +417,6 @@ public abstract class Term
     protected void doResetTerminal() {
         restart();
     }
-
-    protected void doEmailTranscript() {
-        // Don't really want to supply an address, but
-        // currently it's required, otherwise we get an
-        // exception.
-        String addr = "user@example.com";
-        Intent intent =
-                new Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:"
-                        + addr));
-
-        intent.putExtra("body", mEmulatorView.getTranscriptText());
-        startActivity(intent);
-    }
-
-    protected void doDocumentKeys() {
-        String controlKey = CONTROL_KEY_NAME[mControlKeyId];
-        new AlertDialog.Builder(this).
-            setTitle("Press " + controlKey + " and Key").
-            setMessage(controlKey + " Space ==> Control-@ (NUL)\n"
-                    + controlKey + " A..Z ==> Control-A..Z\n"
-                    + controlKey + " 1 ==> Control-[ (ESC)\n"
-                    + controlKey + " 5 ==> Control-_\n"
-                    + controlKey + " . ==> Control-\\\n"
-                    + controlKey + " 0 ==> Control-]\n"
-                    + controlKey + " 6 ==> Control-^").
-            show();
-     }
 
     private void setColors() {
         int[] scheme = COLOR_SCHEMES[mColorId];

@@ -16,10 +16,6 @@
  */
 package ob.droid.term;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-
 import android.util.Log;
 
 /**
@@ -30,54 +26,11 @@ import android.util.Log;
  * video, color) alternate screen cursor key and keypad escape sequences.
  */
 class TerminalEmulator {
-
-    /**
-     * The cursor row. Numbered 0..mRows-1.
-     */
-    private int mCursorRow;
-
-    /**
-     * The cursor column. Numbered 0..mColumns-1.
-     */
-    private int mCursorCol;
-
-    /**
-     * The number of character rows in the terminal screen.
-     */
-    private int mRows;
-
-    /**
-     * The number of character columns in the terminal screen.
-     */
-    private int mColumns;
-
-    /**
-     * Used to send data to the remote process. Needed to implement the various
-     * "report" escape sequences.
-     */
-    private FileOutputStream mTermOut;
-
-    /**
-     * Stores the characters that appear on the screen of the emulated terminal.
-     */
-    private Screen mScreen;
-
-    /**
-     * Keeps track of the current argument of the current escape sequence.
-     * Ranges from 0 to MAX_ESCAPE_PARAMETERS-1. (Typically just 0 or 1.)
-     */
-    private int mArgIndex;
-
     /**
      * The number of parameter arguments. This name comes from the ANSI standard
      * for terminal escape codes.
      */
     private static final int MAX_ESCAPE_PARAMETERS = 16;
-
-    /**
-     * Holds the arguments of the current escape sequence.
-     */
-    private int[] mArgs = new int[MAX_ESCAPE_PARAMETERS];
 
     // Escape processing states:
 
@@ -116,6 +69,63 @@ class TerminalEmulator {
      */
     private static final int ESC_LEFT_SQUARE_BRACKET_QUESTION_MARK = 6;
 
+    // DecSet booleans
+
+    /**
+     * This mask indicates 132-column mode is set. (As opposed to 80-column
+     * mode.)
+     */
+    private static final int K_132_COLUMN_MODE_MASK = 1 << 3;
+
+    /**
+     * This mask indicates that origin mode is set. (Cursor addressing is
+     * relative to the absolute screen size, rather than the currently set top
+     * and bottom margins.)
+     */
+    private static final int K_ORIGIN_MODE_MASK = 1 << 6;
+
+    /**
+     * This mask indicates that wraparound mode is set. (As opposed to
+     * stop-at-right-column mode.)
+     */
+    private static final int K_WRAPAROUND_MODE_MASK = 1 << 7;
+
+    /**
+     * The cursor row. Numbered 0..mRows-1.
+     */
+    private int mCursorRow;
+
+    /**
+     * The cursor column. Numbered 0..mColumns-1.
+     */
+    private int mCursorCol;
+
+    /**
+     * The number of character rows in the terminal screen.
+     */
+    private int mRows;
+
+    /**
+     * The number of character columns in the terminal screen.
+     */
+    private int mColumns;
+
+    /**
+     * Stores the characters that appear on the screen of the emulated terminal.
+     */
+    private Screen mScreen;
+
+    /**
+     * Keeps track of the current argument of the current escape sequence.
+     * Ranges from 0 to MAX_ESCAPE_PARAMETERS-1. (Typically just 0 or 1.)
+     */
+    private int mArgIndex;
+
+    /**
+     * Holds the arguments of the current escape sequence.
+     */
+    private int[] mArgs = new int[MAX_ESCAPE_PARAMETERS];
+
     /**
      * True if the current escape sequence should continue, false if the current
      * escape sequence should be terminated. Used when parsing a single
@@ -139,27 +149,6 @@ class TerminalEmulator {
      * cursor position escape sequences.
      */
     private int mSavedCursorCol;
-
-    // DecSet booleans
-
-    /**
-     * This mask indicates 132-column mode is set. (As opposed to 80-column
-     * mode.)
-     */
-    private static final int K_132_COLUMN_MODE_MASK = 1 << 3;
-
-    /**
-     * This mask indicates that origin mode is set. (Cursor addressing is
-     * relative to the absolute screen size, rather than the currently set top
-     * and bottom margins.)
-     */
-    private static final int K_ORIGIN_MODE_MASK = 1 << 6;
-
-    /**
-     * This mask indicates that wraparound mode is set. (As opposed to
-     * stop-at-right-column mode.)
-     */
-    private static final int K_WRAPAROUND_MODE_MASK = 1 << 7;
 
     /**
      * Holds multiple DECSET flags. The data is stored this way, rather than in
@@ -245,15 +234,12 @@ class TerminalEmulator {
      * @param screen the screen to render characters into.
      * @param columns the number of columns to emulate
      * @param rows the number of rows to emulate
-     * @param termOut the output file descriptor that talks to the pseudo-tty.
      */
-    public TerminalEmulator(Screen screen, int columns, int rows,
-            FileOutputStream termOut) {
+    public TerminalEmulator(Screen screen, int columns, int rows) {
         mScreen = screen;
         mRows = rows;
         mColumns = columns;
         mTabStop = new boolean[mColumns];
-        mTermOut = termOut;
         reset();
     }
 
@@ -645,7 +631,7 @@ class TerminalEmulator {
             break;
 
         case 'Z': // return terminal ID
-            sendDeviceAttributes();
+            clearScreen();
             break;
 
         case '[':
@@ -788,7 +774,7 @@ class TerminalEmulator {
             break;
 
         case 'c': // Send device attributes
-            sendDeviceAttributes();
+            clearScreen();
             break;
 
         case 'd': // ESC [ Pn d - Vert Position Absolute
@@ -949,45 +935,8 @@ class TerminalEmulator {
         setCursorRowCol(newRow, newCol);
     }
 
-    private void sendDeviceAttributes() {
-        // This identifies us as a DEC vt100 with advanced
-        // video options. This is what the xterm terminal
-        // emulator sends.
-        byte[] attributes =
-                {
-                /* VT100 */
-                 (byte) 27, (byte) '[', (byte) '?', (byte) '1',
-                 (byte) ';', (byte) '2', (byte) 'c'
+    private void clearScreen() {
 
-                /* VT220
-                (byte) 27, (byte) '[', (byte) '?', (byte) '6',
-                (byte) '0',  (byte) ';',
-                (byte) '1',  (byte) ';',
-                (byte) '2',  (byte) ';',
-                (byte) '6',  (byte) ';',
-                (byte) '8',  (byte) ';',
-                (byte) '9',  (byte) ';',
-                (byte) '1',  (byte) '5', (byte) ';',
-                (byte) 'c'
-                */
-                };
-
-        write(attributes);
-    }
-
-    /**
-     * Send data to the shell process
-     * @param data
-     */
-    private void write(byte[] data) {
-        try {
-            mTermOut.write(data);
-            mTermOut.flush();
-        } catch (IOException e) {
-            // Ignore exception
-            // We don't really care if the receiver isn't listening.
-            // We just make a best effort to answer the query.
-        }
     }
 
     private void scroll() {

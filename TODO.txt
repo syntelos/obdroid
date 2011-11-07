@@ -1,0 +1,8 @@
+                       -*-outline-*-
+
+* replace java.io. with ob.droid.Connection
+
+* implement bluetooth
+
+* review term craziness
+

@@ -51,11 +51,7 @@ import android.view.inputmethod.ExtractedText;
 import android.view.inputmethod.ExtractedTextRequest;
 import android.view.inputmethod.InputConnection;
 
-import java.io.FileDescriptor;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-
+import ob.droid.Connection;
 import ob.droid.R;
 
 /**
@@ -198,6 +194,50 @@ class EmulatorView extends View implements GestureDetector.OnGestureListener {
     public EmulatorView(Context context) {
         super(context);
         commonConstructor(context);
+    }
+    public EmulatorView(Context context, AttributeSet attrs) {
+        this(context, attrs, 0);
+    }
+
+    public EmulatorView(Context context, AttributeSet attrs,
+            int defStyle) {
+        super(context, attrs, defStyle);
+        TypedArray a =
+                context.obtainStyledAttributes(android.R.styleable.View);
+        initializeScrollbars(a);
+        a.recycle();
+        commonConstructor(context);
+    }
+
+
+    private void commonConstructor(Context context) {
+        mTextRenderer = null;
+        mCursorPaint = new Paint();
+        mCursorPaint.setARGB(255,128,128,128);
+        mBackgroundPaint = new Paint();
+        mTopRow = 0;
+        mLeftColumn = 0;
+        mGestureDetector = new GestureDetector(context, this, null);
+        mGestureDetector.setIsLongpressEnabled(false);
+        setVerticalScrollBarEnabled(true);
+    }
+    /**
+     * Call this to initialize the view.
+     *
+     * @param termFd the file descriptor
+     * @param termOut the output stream for the pseudo-teletype
+     */
+    public void init(Connection connection) {
+
+        this.connection = connection;
+
+        mTextSize = 10;
+        mForeground = Term.WHITE;
+        mBackground = Term.BLACK;
+        updateText();
+
+        mReceiveBuffer = new byte[4 * 1024];
+        mByteQueue = new ByteQueue(4 * 1024);
     }
 
     public void register(TermKeyListener listener) {
@@ -356,31 +396,6 @@ class EmulatorView extends View implements GestureDetector.OnGestureListener {
         return mEmulator.getKeypadApplicationMode();
     }
 
-    public EmulatorView(Context context, AttributeSet attrs) {
-        this(context, attrs, 0);
-    }
-
-    public EmulatorView(Context context, AttributeSet attrs,
-            int defStyle) {
-        super(context, attrs, defStyle);
-        TypedArray a =
-                context.obtainStyledAttributes(android.R.styleable.View);
-        initializeScrollbars(a);
-        a.recycle();
-        commonConstructor(context);
-    }
-
-    private void commonConstructor(Context context) {
-        mTextRenderer = null;
-        mCursorPaint = new Paint();
-        mCursorPaint.setARGB(255,128,128,128);
-        mBackgroundPaint = new Paint();
-        mTopRow = 0;
-        mLeftColumn = 0;
-        mGestureDetector = new GestureDetector(context, this, null);
-        mGestureDetector.setIsLongpressEnabled(false);
-        setVerticalScrollBarEnabled(true);
-    }
 
     @Override
     protected int computeVerticalScrollRange() {
@@ -395,24 +410,6 @@ class EmulatorView extends View implements GestureDetector.OnGestureListener {
     @Override
     protected int computeVerticalScrollOffset() {
         return mTranscriptScreen.getActiveRows() + mTopRow - mRows;
-    }
-
-    /**
-     * Call this to initialize the view.
-     *
-     * @param termFd the file descriptor
-     * @param termOut the output stream for the pseudo-teletype
-     */
-    public void initialize(FileDescriptor termFd, FileOutputStream termOut) {
-        mTermOut = termOut;
-        mTermFd = termFd;
-        mTextSize = 10;
-        mForeground = Term.WHITE;
-        mBackground = Term.BLACK;
-        updateText();
-        mTermIn = new FileInputStream(mTermFd);
-        mReceiveBuffer = new byte[4 * 1024];
-        mByteQueue = new ByteQueue(4 * 1024);
     }
 
     /**
@@ -504,8 +501,9 @@ class EmulatorView extends View implements GestureDetector.OnGestureListener {
         return true;
     }
 
-    public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX,
-            float velocityY) {
+    public boolean onFling(MotionEvent e1, MotionEvent e2,
+                           float velocityX, float velocityY)
+    {
         // TODO: add animation man's (non animated) fling
         mScrollRemainder = 0.0f;
         onScroll(e1, e2, 2 * velocityX, -2 * velocityY);
@@ -588,8 +586,7 @@ class EmulatorView extends View implements GestureDetector.OnGestureListener {
             mTranscriptScreen =
                     new TranscriptScreen(mColumns, TRANSCRIPT_ROWS, mRows, 0, 7);
             mEmulator =
-                    new TerminalEmulator(mTranscriptScreen, mColumns, mRows,
-                            mTermOut);
+                    new TerminalEmulator(mTranscriptScreen, mColumns, mRows);
         }
 
         // Reset our paging:
